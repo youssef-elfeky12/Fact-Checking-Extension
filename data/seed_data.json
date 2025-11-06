@@ -1,0 +1,52 @@
+[
+  {
+    "text": "The Earth is approximately spherical in shape, slightly flattened at the poles and bulging at the equator. This has been confirmed by satellite imagery, space travel, and centuries of scientific observation.",
+    "source": "Scientific consensus on Earth's shape",
+    "url": "https://www.nasa.gov/audience/forstudents/k-4/stories/nasa-knows/what-is-earth-k4.html"
+  },
+  {
+    "text": "Water boils at 100 degrees Celsius (212 degrees Fahrenheit) at sea level under standard atmospheric pressure. This temperature changes with altitude and pressure.",
+    "source": "Physical properties of water",
+    "url": "https://www.usgs.gov/special-topics/water-science-school/science/water-properties"
+  },
+  {
+    "text": "The speed of light in a vacuum is approximately 299,792,458 meters per second. This is a fundamental constant of nature and is denoted by the symbol 'c'.",
+    "source": "Physical constants - Speed of light",
+    "url": "https://physics.nist.gov/cgi-bin/cuu/Value?c"
+  },
+  {
+    "text": "Climate change is primarily caused by human activities, particularly the emission of greenhouse gases like carbon dioxide and methane. The scientific consensus is overwhelming, with 97% of climate scientists agreeing on this.",
+    "source": "IPCC Climate Change Report 2023",
+    "url": "https://www.ipcc.ch/"
+  },
+  {
+    "text": "Vaccines are safe and effective at preventing diseases. They have been responsible for the eradication or near-eradication of many deadly diseases including smallpox and polio.",
+    "source": "World Health Organization - Vaccines",
+    "url": "https://www.who.int/health-topics/vaccines-and-immunization"
+  },
+  {
+    "text": "The Moon orbits Earth at an average distance of about 384,400 kilometers (238,855 miles). The Moon's gravitational pull causes ocean tides on Earth.",
+    "source": "NASA Moon Facts",
+    "url": "https://moon.nasa.gov/about/in-depth/"
+  },
+  {
+    "text": "DNA (deoxyribonucleic acid) carries genetic information in living organisms. It has a double helix structure discovered by Watson and Crick in 1953.",
+    "source": "National Human Genome Research Institute",
+    "url": "https://www.genome.gov/genetics-glossary/Deoxyribonucleic-Acid"
+  },
+  {
+    "text": "The theory of evolution by natural selection, proposed by Charles Darwin, explains how species change over time through inherited traits that improve survival and reproduction.",
+    "source": "Biological evolution - Scientific consensus",
+    "url": "https://www.nationalacademies.org/evolution/evidence"
+  },
+  {
+    "text": "Smoking tobacco significantly increases the risk of lung cancer, heart disease, stroke, and many other serious health conditions. This is supported by decades of research.",
+    "source": "CDC - Health Effects of Smoking",
+    "url": "https://www.cdc.gov/tobacco/basic_information/health_effects/index.htm"
+  },
+  {
+    "text": "Antibiotics are effective against bacterial infections but do not work against viral infections like the common cold or flu. Overuse of antibiotics can lead to antibiotic resistance.",
+    "source": "WHO - Antimicrobial Resistance",
+    "url": "https://www.who.int/health-topics/antimicrobial-resistance"
+  }
+]

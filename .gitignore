@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+backend/__pycache__/
+tests/__pycache__/
+*.log
+*.db
+*.sqlite
+data/raw/
+data/cache/
+
+# Model files (can be large)
+*.bin
+*.pt
+*.pth
+*.onnx
+*.h5
