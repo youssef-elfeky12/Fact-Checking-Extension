@@ -73,7 +73,8 @@ class NLIVerifier:
     def verify_claim(
         self, 
         claim: str, 
-        evidence_docs: List[Dict]
+        evidence_docs: List[Dict],
+        relevance_threshold: float = 0.5
     ) -> Dict:
         """
         Verify a claim against multiple evidence documents.
@@ -81,7 +82,9 @@ class NLIVerifier:
         Args:
             claim: The claim to fact-check
             evidence_docs: List of evidence documents (from retrieval)
-                          Each doc should have 'text' and 'source' keys
+                          Each doc should have 'text', 'source', and 'distance' keys
+            relevance_threshold: Minimum similarity score to consider evidence (0-1)
+                                Higher = stricter filtering of irrelevant docs
         
         Returns:
             Dict containing:
@@ -98,17 +101,42 @@ class NLIVerifier:
                 "explanation": "No evidence found to verify this claim."
             }
         
-        # Compute NLI scores for each evidence document
+        # Filter evidence by semantic similarity (distance to similarity conversion)
+        # Lower distance = higher similarity. Typical FAISS L2 distances: 0.5-2.0 for relevant docs
+        relevant_docs = []
+        for doc in evidence_docs:
+            distance = doc.get('distance', 1.0)
+            # Convert L2 distance to similarity score (0-1)
+            # Rough heuristic: similarity = 1 / (1 + distance)
+            similarity = 1.0 / (1.0 + distance)
+            
+            if similarity >= relevance_threshold:
+                doc['similarity'] = similarity
+                relevant_docs.append(doc)
+        
+        # If no relevant evidence after filtering, return neutral
+        if not relevant_docs:
+            return {
+                "truth_score": 50.0,
+                "evidences": [],
+                "avg_nli_scores": {"contradiction": 0.33, "neutral": 0.34, "entailment": 0.33},
+                "explanation": "No sufficiently relevant evidence found to verify this claim."
+            }
+        
+        # Compute NLI scores for each relevant evidence document
         scored_evidence = []
         all_nli_scores = []
+        weights = []
         
-        for doc in evidence_docs:
+        for doc in relevant_docs:
             evidence_text = doc.get('text', '')
             nli_scores = self.compute_nli_scores(evidence_text, claim)
             all_nli_scores.append(nli_scores)
             
-            # Determine stance
+            # Weight by both NLI confidence and semantic similarity
             stance, confidence = self._get_stance(nli_scores)
+            weight = confidence * doc['similarity']  # Combined weight
+            weights.append(weight)
             
             scored_evidence.append({
                 "source": doc.get('source', 'Unknown'),
@@ -118,12 +146,20 @@ class NLIVerifier:
                 "nli_scores": nli_scores
             })
         
-        # Calculate average NLI scores
-        avg_nli = {
-            "contradiction": np.mean([s["contradiction"] for s in all_nli_scores]),
-            "neutral": np.mean([s["neutral"] for s in all_nli_scores]),
-            "entailment": np.mean([s["entailment"] for s in all_nli_scores])
-        }
+        # Calculate WEIGHTED average NLI scores (not simple average)
+        total_weight = sum(weights)
+        if total_weight > 0:
+            avg_nli = {
+                "contradiction": sum(s["contradiction"] * w for s, w in zip(all_nli_scores, weights)) / total_weight,
+                "neutral": sum(s["neutral"] * w for s, w in zip(all_nli_scores, weights)) / total_weight,
+                "entailment": sum(s["entailment"] * w for s, w in zip(all_nli_scores, weights)) / total_weight
+            }
+        else:
+            avg_nli = {
+                "contradiction": sum(s["contradiction"] for s in all_nli_scores) / len(all_nli_scores),
+                "neutral": sum(s["neutral"] for s in all_nli_scores) / len(all_nli_scores),
+                "entailment": sum(s["entailment"] for s in all_nli_scores) / len(all_nli_scores)
+            }
         
         # Calculate truth score (0-100)
         truth_score = self._calculate_truth_score(avg_nli)

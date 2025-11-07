@@ -94,6 +94,16 @@ def root():
     }
 
 
+@app.get("/health")
+def health_check():
+    """Health check endpoint for extension popup status monitoring."""
+    return {
+        "status": "ok",
+        "search_ready": search_engine is not None and search_engine.index is not None,
+        "verifier_ready": verifier is not None
+    }
+
+
 @app.post("/check", response_model=CheckResponse)
 def check_claim(req: CheckRequest):
     """

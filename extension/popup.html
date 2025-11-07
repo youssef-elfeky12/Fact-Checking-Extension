@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fact Checker</title>
+    <style>
+      body {
+        width: 320px;
+        padding: 16px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        margin: 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      h1 {
+        font-size: 20px;
+        margin: 0 0 12px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .icon {
+        font-size: 24px;
+      }
+
+      p {
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 0 0 16px 0;
+        opacity: 0.95;
+      }
+
+      .status {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
+
+      .status-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 13px;
+      }
+
+      .status-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .status-label {
+        opacity: 0.9;
+      }
+
+      .status-value {
+        font-weight: 600;
+      }
+
+      .indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-left: 6px;
+      }
+
+      .indicator-active {
+        background: #10b981;
+        box-shadow: 0 0 8px #10b981;
+      }
+
+      .indicator-inactive {
+        background: #ef4444;
+      }
+
+      .info {
+        background: rgba(255, 255, 255, 0.15);
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .info strong {
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      a {
+        color: white;
+        text-decoration: underline;
+      }
+
+      .footer {
+        margin-top: 16px;
+        text-align: center;
+        font-size: 12px;
+        opacity: 0.8;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>
+      <span class="icon">🔍</span>
+      Fact Checker
+    </h1>
+
+    <p>
+      AI-powered fact-checking for tweets using semantic search and NLI
+      verification.
+    </p>
+
+    <div class="status">
+      <div class="status-item">
+        <span class="status-label">Backend Status:</span>
+        <span class="status-value" id="backend-status"> Checking... </span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Page:</span>
+        <span class="status-value" id="page-status">Ready</span>
+      </div>
+    </div>
+
+    <div class="info">
+      <strong>How to use:</strong>
+      1. Navigate to Twitter/X<br />
+      2. Look for the "🔍 Check Fact" button on tweets<br />
+      3. Click to verify claims with AI
+    </div>
+
+    <div class="footer">v0.1.0 | Local-first AI</div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

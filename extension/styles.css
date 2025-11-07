@@ -1,0 +1,228 @@
+/**
+ * Fact Checker Extension - Styles
+ */
+
+/* Check Fact Button */
+.fact-checker-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fact-checker-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.fact-checker-button:active {
+  transform: translateY(0);
+}
+
+.fact-checker-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Result Container */
+.fact-checker-result {
+  margin-top: 12px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Header with Score */
+.fact-checker-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.fact-checker-score {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.score-number {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.score-label {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Explanation */
+.fact-checker-explanation {
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 12px;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border-left: 3px solid #667eea;
+}
+
+/* Evidence Section */
+.fact-checker-evidence {
+  margin-top: 12px;
+}
+
+.evidence-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.evidence-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  margin-bottom: 8px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  font-size: 13px;
+}
+
+.evidence-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* Stance colors */
+.stance-support .evidence-icon {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.stance-contradict .evidence-icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.stance-neutral .evidence-icon {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+.evidence-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.evidence-source {
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.evidence-snippet {
+  color: #64748b;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Loading State */
+.fact-checker-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.loading-spinner {
+  font-size: 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error State */
+.fact-checker-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 13px;
+}
+
+.error-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  .fact-checker-result {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .fact-checker-explanation {
+    background: #0f172a;
+    color: #cbd5e1;
+  }
+
+  .evidence-item {
+    background: #0f172a;
+    border-color: #334155;
+  }
+
+  .evidence-source {
+    color: #f1f5f9;
+  }
+
+  .evidence-snippet {
+    color: #94a3b8;
+  }
+
+  .evidence-header {
+    color: #94a3b8;
+  }
+}
