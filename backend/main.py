@@ -2,11 +2,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
-from embeddings import EmbeddingSearchEngine, extract_snippet
+from web_search import get_web_search_engine
 from verifier import get_verifier
 from explainer import get_explainer, is_explainer_enabled
 
-app = FastAPI(title="Fact Checker API", version="0.4.0")
+app = FastAPI(title="Fact Checker API", version="0.5.0")
 
 # CORS configuration for Firefox extension and localhost
 app.add_middleware(
@@ -17,33 +17,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize search engine, verifier, and optional LLM explainer (load on startup)
-search_engine = None
+# Initialize web search engine, verifier, and optional LLM explainer (load on startup)
+web_search = None
 verifier = None
 explainer = None
-INDEX_DIR = os.path.join(os.path.dirname(__file__), '..', 'data', 'index')
 
 
 @app.on_event("startup")
 async def startup_event():
-    """Load FAISS index, NLI model, and optional LLM explainer on startup."""
-    global search_engine, verifier, explainer
+    """Load web search engine, NLI model, and optional LLM explainer on startup."""
+    global web_search, verifier, explainer
     
-    # Load search engine
+    # Initialize web search engine (no pre-loading needed)
     try:
-        search_engine = EmbeddingSearchEngine(model_name="all-mpnet-base-v2")
-        if os.path.exists(INDEX_DIR):
-            search_engine.load_index(INDEX_DIR)
-            print(f"✓ Loaded search index with {search_engine.index.ntotal} documents")
-        else:
-            print("⚠ Warning: No index found. Run build_index.py to create one.")
+        web_search = get_web_search_engine(max_results=5)
+        print("✓ Web search engine ready (DuckDuckGo)\n")
     except Exception as e:
-        print(f"❌ Error loading search engine: {e}")
-        search_engine = None
+        print(f"❌ Error initializing web search: {e}")
+        web_search = None
     
     # Load NLI verifier
     try:
-        print("\n--- Loading NLI Verifier ---")
+        print("--- Loading NLI Verifier ---")
         verifier = get_verifier(model_name="roberta-large-mnli")
         print("✓ NLI verifier ready\n")
     except Exception as e:
@@ -53,7 +48,7 @@ async def startup_event():
     # Load optional LLM explainer (only if enabled)
     if is_explainer_enabled():
         try:
-            print("\n--- Loading LLM Explainer (Mistral 7B) ---")
+            print("--- Loading LLM Explainer (Mistral 7B) ---")
             explainer = get_explainer(model_name="mistralai/Mistral-7B-Instruct-v0.2")
             if explainer:
                 print("✓ LLM explainer ready\n")
@@ -63,7 +58,7 @@ async def startup_event():
             print(f"❌ Error loading LLM explainer: {e}")
             explainer = None
     else:
-        print("\n⚠ LLM explainer disabled (set ENABLE_LLM_EXPLAINER=true to enable)\n")
+        print("⚠ LLM explainer disabled (set ENABLE_LLM_EXPLAINER=true to enable)\n")
 
 
 class CheckRequest(BaseModel):
@@ -87,8 +82,8 @@ class CheckResponse(BaseModel):
 def root():
     return {
         "message": "Fact Checker API is running",
-        "version": "0.4.0",
-        "search_ready": search_engine is not None and search_engine.index is not None,
+        "version": "0.5.0",
+        "search_ready": web_search is not None,
         "verifier_ready": verifier is not None,
         "explainer_ready": explainer is not None
     }
@@ -99,7 +94,7 @@ def health_check():
     """Health check endpoint for extension popup status monitoring."""
     return {
         "status": "ok",
-        "search_ready": search_engine is not None and search_engine.index is not None,
+        "search_ready": web_search is not None,
         "verifier_ready": verifier is not None
     }
 
@@ -108,12 +103,12 @@ def health_check():
 def check_claim(req: CheckRequest):
     """
     Check a claim and return percent_true estimate with evidence.
-    Uses semantic search + NLI verification.
+    Uses real-time web search + NLI verification.
     """
-    if search_engine is None or search_engine.index is None:
+    if web_search is None:
         raise HTTPException(
             status_code=503,
-            detail="Search index not available. Please run build_index.py first."
+            detail="Web search engine not available."
         )
     
     if verifier is None:
@@ -128,28 +123,23 @@ def check_claim(req: CheckRequest):
     if not claim:
         raise HTTPException(status_code=400, detail="tweet_text cannot be empty")
     
-    # Step 1: Search for relevant evidence (top 5)
+    # Step 1: Search the web for relevant evidence
     print(f"\n--- Checking claim: {claim[:100]}... ---")
-    results = search_engine.search(claim, top_k=5)
+    evidence_docs = web_search.search(claim)
     
-    if not results:
+    if not evidence_docs:
         return CheckResponse(
             percent_true=50.0,
             evidences=[],
-            explanation="No relevant evidence found in the database."
+            explanation="No web results found for this claim."
         )
     
-    # Step 2: Prepare documents for NLI verification
-    evidence_docs = []
-    for doc, distance in results:
-        evidence_docs.append({
-            'text': doc['text'],
-            'source': doc['source'],
-            'distance': distance
-        })
-    
-    # Step 3: Verify claim with NLI
-    verification_result = verifier.verify_claim(claim, evidence_docs)
+    # Step 2: Verify claim with NLI (evidence_docs already have distance key)
+    verification_result = verifier.verify_claim(
+        claim, 
+        evidence_docs,
+        relevance_threshold=0.3  # Lower threshold for better web results
+    )
     
     # Step 4: Generate enhanced explanation with LLM (if enabled)
     explanation = verification_result['explanation']
