@@ -6,3 +6,5 @@ pytest==7.4.3
 sentence-transformers==2.7.0
 faiss-cpu==1.7.4
 numpy==1.24.3
+transformers==4.35.0
+torch==2.1.0

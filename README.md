@@ -17,8 +17,8 @@ This project uses a retrieval-augmented verification approach (semantic search +
 ### Current Status
 
 ✅ **Step 1 Complete**: Minimal API skeleton with placeholder responses  
-⏳ **Step 2**: Add semantic search (embeddings + FAISS) - waiting for "continue"  
-⏳ **Step 3**: Add NLI verifier and scoring  
+✅ **Step 2 Complete**: Add semantic search (embeddings + FAISS)  
+✅ **Step 3 Complete**: Add NLI verifier and scoring  
 ⏳ **Step 4**: Optional LLM synthesis  
 ⏳ **Step 5**: Firefox extension  
 ⏳ **Step 6**: Logging and feedback  

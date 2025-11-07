@@ -3,8 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 from embeddings import EmbeddingSearchEngine, extract_snippet
+from verifier import get_verifier
 
-app = FastAPI(title="Fact Checker API", version="0.2.0")
+app = FastAPI(title="Fact Checker API", version="0.3.0")
 
 # CORS configuration for Firefox extension and localhost
 app.add_middleware(
@@ -15,15 +16,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize search engine (load on startup)
+# Initialize search engine and verifier (load on startup)
 search_engine = None
+verifier = None
 INDEX_DIR = os.path.join(os.path.dirname(__file__), '..', 'data', 'index')
 
 
 @app.on_event("startup")
 async def startup_event():
-    """Load FAISS index on startup."""
-    global search_engine
+    """Load FAISS index and NLI model on startup."""
+    global search_engine, verifier
+    
+    # Load search engine
     try:
         search_engine = EmbeddingSearchEngine(model_name="all-mpnet-base-v2")
         if os.path.exists(INDEX_DIR):
@@ -34,6 +38,15 @@ async def startup_event():
     except Exception as e:
         print(f"❌ Error loading search engine: {e}")
         search_engine = None
+    
+    # Load NLI verifier
+    try:
+        print("\n--- Loading NLI Verifier ---")
+        verifier = get_verifier(model_name="roberta-large-mnli")
+        print("✓ NLI verifier ready\n")
+    except Exception as e:
+        print(f"❌ Error loading NLI verifier: {e}")
+        verifier = None
 
 
 class CheckRequest(BaseModel):
@@ -55,19 +68,30 @@ class CheckResponse(BaseModel):
 
 @app.get("/")
 def root():
-    return {"message": "Fact Checker API is running", "version": "0.1.0"}
+    return {
+        "message": "Fact Checker API is running",
+        "version": "0.3.0",
+        "search_ready": search_engine is not None and search_engine.index is not None,
+        "verifier_ready": verifier is not None
+    }
 
 
 @app.post("/check", response_model=CheckResponse)
 def check_claim(req: CheckRequest):
     """
     Check a claim and return percent_true estimate with evidence.
-    Uses semantic search to find relevant evidence.
+    Uses semantic search + NLI verification.
     """
     if search_engine is None or search_engine.index is None:
         raise HTTPException(
             status_code=503,
             detail="Search index not available. Please run build_index.py first."
+        )
+    
+    if verifier is None:
+        raise HTTPException(
+            status_code=503,
+            detail="NLI verifier not available. Please check server logs."
         )
     
     # Extract claim text
@@ -76,7 +100,8 @@ def check_claim(req: CheckRequest):
     if not claim:
         raise HTTPException(status_code=400, detail="tweet_text cannot be empty")
     
-    # Search for relevant evidence (top 5)
+    # Step 1: Search for relevant evidence (top 5)
+    print(f"\n--- Checking claim: {claim[:100]}... ---")
     results = search_engine.search(claim, top_k=5)
     
     if not results:
@@ -86,27 +111,34 @@ def check_claim(req: CheckRequest):
             explanation="No relevant evidence found in the database."
         )
     
-    # Build evidence list with snippets
-    evidences = []
+    # Step 2: Prepare documents for NLI verification
+    evidence_docs = []
     for doc, distance in results:
-        snippet = extract_snippet(doc['text'], max_length=200)
-        # Convert distance to a similarity score (lower distance = higher similarity)
-        # Simple inverse mapping for now
-        score = max(0.0, 1.0 - (distance / 10.0))
-        
-        evidences.append(Evidence(
-            source=doc['source'],
-            snippet=snippet,
-            stance="neutral",  # Will be replaced with NLI in Step 3
-            score=score
-        ))
+        evidence_docs.append({
+            'text': doc['text'],
+            'source': doc['source'],
+            'distance': distance
+        })
     
-    # Simple placeholder aggregation (will be replaced with NLI in Step 3)
-    avg_score = sum(e.score for e in evidences) / len(evidences)
-    percent_true = avg_score * 100
+    # Step 3: Verify claim with NLI
+    verification_result = verifier.verify_claim(claim, evidence_docs)
+    
+    # Step 4: Format response
+    evidences = [
+        Evidence(
+            source=e['source'],
+            snippet=e['snippet'],
+            stance=e['stance'],
+            score=e['score']
+        )
+        for e in verification_result['evidences']
+    ]
+    
+    print(f"Truth score: {verification_result['truth_score']}%")
+    print(f"NLI scores: {verification_result['avg_nli_scores']}")
     
     return CheckResponse(
-        percent_true=round(percent_true, 1),
+        percent_true=verification_result['truth_score'],
         evidences=evidences,
-        explanation=f"Found {len(evidences)} relevant evidence sources. NLI verification pending (Step 3)."
+        explanation=verification_result['explanation']
     )
