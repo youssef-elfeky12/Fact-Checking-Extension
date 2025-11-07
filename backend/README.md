@@ -7,7 +7,7 @@ FastAPI backend for the fact-checking extension.
 ### 1. Create and activate virtual environment
 
 ```cmd
-cd "c:\Users\youss\Important\Projects\Fact Checking Project\backend"
+cd "c:\Users\youss\Important\Projects\Fact-Checking-Extension\backend"
 python -m venv .venv
 .venv\Scripts\activate
 ```
@@ -23,15 +23,15 @@ pip install -r requirements.txt
 **PowerShell (from project root):**
 
 ```powershell
-cd "c:\Users\youss\Important\Projects\Fact Checking Project"
-$env:PYTHONPATH = "c:\Users\youss\Important\Projects\Fact Checking Project\backend"; & ".venv\Scripts\uvicorn.exe" backend.main:app --host 127.0.0.1 --port 8000
+cd "c:\Users\youss\Important\Projects\Fact-Checking-Extension"
+$env:PYTHONPATH = "c:\Users\youss\Important\Projects\Fact-Checking-Extension\backend"; & ".venv\Scripts\uvicorn.exe" backend.main:app --host 127.0.0.1 --port 8000
 ```
 
 **CMD (from project root):**
 
 ```cmd
-cd "c:\Users\youss\Important\Projects\Fact Checking Project"
-set PYTHONPATH=c:\Users\youss\Important\Projects\Fact Checking Project\backend
+cd "c:\Users\youss\Important\Projects\Fact-Checking-Extension"
+set PYTHONPATH=c:\Users\youss\Important\Projects\Fact-Checking-Extension\backend
 .venv\Scripts\uvicorn.exe backend.main:app --host 127.0.0.1 --port 8000
 ```
 
@@ -52,7 +52,7 @@ curl -X POST http://127.0.0.1:8000/check -H "Content-Type: application/json" -d 
 Make sure the backend is running, then:
 
 ```cmd
-cd "c:\Users\youss\Important\Projects\Fact Checking Project\tests"
+cd "c:\Users\youss\Important\Projects\Fact-Checking-Extension\tests"
 python test_api.py
 ```
 
@@ -99,7 +99,7 @@ Check a claim and return fact-check results.
 Before running the server, you need to build the FAISS search index:
 
 ```cmd
-cd "c:\Users\youss\Important\Projects\Fact Checking Project"
+cd "c:\Users\youss\Important\Projects\Fact-Checking-Extension"
 & ".venv\Scripts\python.exe" backend\build_index.py
 ```
 

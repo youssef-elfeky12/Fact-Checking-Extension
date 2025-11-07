@@ -37,7 +37,7 @@ This project uses a retrieval-augmented verification approach (semantic search +
 1. **Clone and navigate**:
 
 ```cmd
-cd "c:\Users\youss\Important\Projects\Fact Checking Project"
+cd "c:\Users\youss\Important\Projects\Fact-Checking-Extension"
 ```
 
 2. **Backend setup** (see `backend/README.md` for details):
@@ -66,7 +66,7 @@ API docs: http://127.0.0.1:8000/docs
 ## Project Structure
 
 ```
-Fact Checking Project/
+Fact-Checking-Extension/
 ├── backend/          # FastAPI server
 │   ├── main.py
 │   ├── requirements.txt

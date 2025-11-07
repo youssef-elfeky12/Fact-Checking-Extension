@@ -27,6 +27,7 @@ tests/__pycache__/
 *.sqlite
 data/raw/
 data/cache/
+copilot_prompt.md
 
 # Model files (can be large)
 *.bin
