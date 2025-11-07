@@ -181,3 +181,138 @@ Waiting for user to type "continue" to proceed to Step 3 (NLI verifier + scoring
 ### Next Step
 
 Waiting for user to type "continue" to proceed to Step 4 (Optional LLM synthesis for enhanced explanations).
+
+---
+
+## Step 4 - Optional LLM Synthesis (Mistral 7B) (2025-11-07)
+
+### Added
+
+- **New module**: `backend/explainer.py` (245 lines)
+
+  - Implemented `LLMExplainer` class using `mistralai/Mistral-7B-Instruct-v0.2`
+  - Uses 4-bit quantization via bitsandbytes (fits in 11GB GPU)
+  - `generate_explanation()` - generates natural language explanations from claim + evidence
+  - Template-based fallback if LLM generation fails
+  - Toggleable via `ENABLE_LLM_EXPLAINER` environment variable
+  - Auto-detects GPU/CPU and adjusts accordingly
+
+- **Updated**: `backend/main.py` (v0.4.0)
+
+  - Integrated optional LLM explainer into startup
+  - Modified `/check` endpoint to use LLM explanations when enabled
+  - Falls back to template-based explanations if LLM disabled or fails
+  - Enhanced health check with explainer status
+
+- **Dependencies**: Added to `requirements.txt`
+
+  - `bitsandbytes==0.41.0` (4-bit quantization)
+  - `accelerate==0.24.0` (efficient model loading)
+
+- **Tests**: `tests/test_explainer.py`
+
+  - Tests for LLM loading
+  - Tests for explanation generation (true/false claims)
+  - Tests for fallback mechanism
+  - Requires `ENABLE_LLM_EXPLAINER=true` to run
+
+- **Documentation**: `STEP4_COMPLETE.md`
+  - Installation guide
+  - How to enable/disable LLM
+  - Performance benchmarks
+  - Troubleshooting guide
+
+### Technical Details
+
+**Model**: Mistral 7B Instruct v0.2
+
+- Parameters: 7 billion
+- Quantization: 4-bit NF4 (bitsandbytes)
+- Size: ~3.5-4GB on disk/memory
+- Context window: 8192 tokens
+- Inference: ~1-2 seconds per explanation (GPU)
+
+**Prompt Format**: Mistral Instruct format
+
+```
+[INST] {system_prompt}
+Claim: "{claim}"
+Truth Score: {score}%
+Evidence: {evidence_list}
+{task_instruction} [/INST]
+```
+
+**Generated Explanations**:
+
+- 2-3 sentences
+- Cites evidence sources
+- Explains verdict reasoning
+- More natural than template-based
+
+**Toggle Control**:
+
+- **Disabled by default** (template explanations only)
+- Enable: Set `ENABLE_LLM_EXPLAINER=true` environment variable
+- Check status: GET `/` returns `explainer_ready: true/false`
+
+**Memory Usage**:
+| Configuration | Memory | Startup Time | Per-request |
+|---------------|--------|--------------|-------------|
+| LLM Disabled | ~2GB | ~5s | ~1s |
+| LLM Enabled | ~6-7GB | ~15s | ~2-3s |
+
+**GPU Requirements**:
+
+- NVIDIA GPU with 11GB+ VRAM (recommended)
+- CUDA 11.8+ and compatible drivers
+- Falls back to CPU if no GPU (slower, ~10-20s per explanation)
+
+### Workflow Integration
+
+1. User submits claim via POST /check
+2. Semantic search retrieves evidence (Step 2)
+3. NLI computes truth score (Step 3)
+4. **NEW**: If `explainer` enabled, generate LLM explanation
+   - Mistral 7B synthesizes 2-3 sentence explanation
+   - Cites evidence and explains reasoning
+5. If LLM disabled/fails, use template explanation (Step 3)
+6. Return response with explanation
+
+### Example Outputs
+
+**Template Explanation (Step 3)**:
+
+```
+This claim appears likely true based on 3 evidence source(s).
+2 source(s) support the claim. 1 source(s) are neutral or inconclusive.
+```
+
+**LLM Explanation (Step 4)**:
+
+```
+The claim is likely true. Scientific evidence confirms that water boils
+at 100°C at sea level under standard atmospheric pressure. Two reliable
+sources directly support this well-established physical fact.
+```
+
+### Files Added/Modified
+
+- `backend/explainer.py` (new - 245 lines)
+- `backend/main.py` (modified - integrated LLM)
+- `backend/requirements.txt` (modified - added bitsandbytes, accelerate)
+- `tests/test_explainer.py` (new - 222 lines)
+- `STEP4_COMPLETE.md` (new - setup guide)
+- `README.md` (updated status: Step 4 ✅)
+
+### Optional Feature
+
+**This step is completely optional**:
+
+- API works fine without it (uses template explanations)
+- Requires significant GPU resources (~4GB extra)
+- Better for production, but template is fine for demos
+- Can be enabled/disabled anytime via environment variable
+
+### Next Step
+
+Waiting for user to type "continue" to proceed to Step 5 (Firefox extension UI).

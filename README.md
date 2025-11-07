@@ -19,7 +19,7 @@ This project uses a retrieval-augmented verification approach (semantic search +
 ✅ **Step 1 Complete**: Minimal API skeleton with placeholder responses  
 ✅ **Step 2 Complete**: Add semantic search (embeddings + FAISS)  
 ✅ **Step 3 Complete**: Add NLI verifier and scoring  
-⏳ **Step 4**: Optional LLM synthesis  
+✅ **Step 4 Complete**: Optional LLM synthesis (Mistral 7B - toggleable)  
 ⏳ **Step 5**: Firefox extension  
 ⏳ **Step 6**: Logging and feedback  
 ⏳ **Step 7**: Documentation and packaging

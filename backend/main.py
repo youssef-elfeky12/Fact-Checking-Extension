@@ -4,8 +4,9 @@ from pydantic import BaseModel
 import os
 from embeddings import EmbeddingSearchEngine, extract_snippet
 from verifier import get_verifier
+from explainer import get_explainer, is_explainer_enabled
 
-app = FastAPI(title="Fact Checker API", version="0.3.0")
+app = FastAPI(title="Fact Checker API", version="0.4.0")
 
 # CORS configuration for Firefox extension and localhost
 app.add_middleware(
@@ -16,16 +17,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize search engine and verifier (load on startup)
+# Initialize search engine, verifier, and optional LLM explainer (load on startup)
 search_engine = None
 verifier = None
+explainer = None
 INDEX_DIR = os.path.join(os.path.dirname(__file__), '..', 'data', 'index')
 
 
 @app.on_event("startup")
 async def startup_event():
-    """Load FAISS index and NLI model on startup."""
-    global search_engine, verifier
+    """Load FAISS index, NLI model, and optional LLM explainer on startup."""
+    global search_engine, verifier, explainer
     
     # Load search engine
     try:
@@ -47,6 +49,21 @@ async def startup_event():
     except Exception as e:
         print(f"❌ Error loading NLI verifier: {e}")
         verifier = None
+    
+    # Load optional LLM explainer (only if enabled)
+    if is_explainer_enabled():
+        try:
+            print("\n--- Loading LLM Explainer (Mistral 7B) ---")
+            explainer = get_explainer(model_name="mistralai/Mistral-7B-Instruct-v0.2")
+            if explainer:
+                print("✓ LLM explainer ready\n")
+            else:
+                print("⚠ LLM explainer disabled\n")
+        except Exception as e:
+            print(f"❌ Error loading LLM explainer: {e}")
+            explainer = None
+    else:
+        print("\n⚠ LLM explainer disabled (set ENABLE_LLM_EXPLAINER=true to enable)\n")
 
 
 class CheckRequest(BaseModel):
@@ -70,9 +87,10 @@ class CheckResponse(BaseModel):
 def root():
     return {
         "message": "Fact Checker API is running",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "search_ready": search_engine is not None and search_engine.index is not None,
-        "verifier_ready": verifier is not None
+        "verifier_ready": verifier is not None,
+        "explainer_ready": explainer is not None
     }
 
 
@@ -123,7 +141,23 @@ def check_claim(req: CheckRequest):
     # Step 3: Verify claim with NLI
     verification_result = verifier.verify_claim(claim, evidence_docs)
     
-    # Step 4: Format response
+    # Step 4: Generate enhanced explanation with LLM (if enabled)
+    explanation = verification_result['explanation']
+    if explainer is not None:
+        try:
+            print("Generating LLM explanation...")
+            llm_explanation = explainer.generate_explanation(
+                claim=claim,
+                truth_score=verification_result['truth_score'],
+                evidences=verification_result['evidences']
+            )
+            explanation = llm_explanation
+            print(f"✓ LLM explanation generated")
+        except Exception as e:
+            print(f"⚠ LLM explanation failed, using fallback: {e}")
+            # Keep the template-based explanation from verifier
+    
+    # Step 5: Format response
     evidences = [
         Evidence(
             source=e['source'],
@@ -140,5 +174,5 @@ def check_claim(req: CheckRequest):
     return CheckResponse(
         percent_true=verification_result['truth_score'],
         evidences=evidences,
-        explanation=verification_result['explanation']
+        explanation=explanation
     )
