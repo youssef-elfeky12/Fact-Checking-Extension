@@ -143,7 +143,9 @@ class NLIVerifier:
                 "snippet": evidence_text[:200] + "..." if len(evidence_text) > 200 else evidence_text,
                 "stance": stance,
                 "score": confidence,
-                "nli_scores": nli_scores
+                "nli_scores": nli_scores,
+                "url": doc.get('url', ''),  # Pass through URL from web search
+                "reliability_score": doc.get('reliability_score', 0)  # Pass through reliability score
             })
         
         # Calculate WEIGHTED average NLI scores (not simple average)
@@ -164,15 +166,22 @@ class NLIVerifier:
         # Calculate truth score (0-100)
         truth_score = self._calculate_truth_score(avg_nli)
         
-        # Sort evidence by confidence
-        scored_evidence.sort(key=lambda x: x['score'], reverse=True)
+        # Sort evidence by reliability score (if available) then by confidence
+        # This ensures we show the most reliable sources first
+        scored_evidence.sort(
+            key=lambda x: (x.get('reliability_score', 0), x['score']), 
+            reverse=True
+        )
+        
+        # Keep top 3 for display (but used all for NLI calculation)
+        display_evidence = scored_evidence[:3]
         
         # Generate explanation
-        explanation = self._generate_explanation(truth_score, scored_evidence)
+        explanation = self._generate_explanation(truth_score, display_evidence)
         
         return {
             "truth_score": round(truth_score, 2),
-            "evidences": scored_evidence,
+            "evidences": display_evidence,  # Only return top 3
             "avg_nli_scores": {k: round(v, 3) for k, v in avg_nli.items()},
             "explanation": explanation
         }

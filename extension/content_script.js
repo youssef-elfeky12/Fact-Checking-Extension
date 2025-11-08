@@ -70,53 +70,68 @@ function createResultContainer() {
  * Display the fact-check result
  */
 function displayResult(container, result) {
-  const { percent_true, evidences, explanation } = result;
+  const { verdict, certainty, evidences, explanation } = result;
 
-  // Determine verdict and color
-  let verdict, color;
-  if (percent_true >= 75) {
-    verdict = "Likely True";
+  // Convert verdict to display text
+  let verdictText, color;
+  if (verdict === "SUPPORTS") {
+    verdictText = "True";
     color = "#10b981"; // green
-  } else if (percent_true >= 50) {
-    verdict = "Uncertain";
-    color = "#f59e0b"; // orange
-  } else if (percent_true >= 25) {
-    verdict = "Likely False";
+  } else if (verdict === "REFUTES") {
+    verdictText = "False";
     color = "#ef4444"; // red
   } else {
-    verdict = "False";
-    color = "#dc2626"; // dark red
+    verdictText = "Uncertain";
+    color = "#f59e0b"; // orange
   }
 
-  // Build HTML
+  // Convert certainty to percentage (0.0-1.0 -> 0-100)
+  const certaintyPercent = Math.round(certainty * 100);
+
+  // Clean up explanation - remove the "VERDICT: ... | CERTAINTY: ..." prefix if present
+  let cleanedExplanation = explanation;
+  const verdictPattern = /^VERDICT:\s*\w+\s*\|\s*CERTAINTY:\s*\d+%\s*\|\s*/i;
+  cleanedExplanation = cleanedExplanation.replace(verdictPattern, "");
+  // Also try without the pipe format
+  cleanedExplanation = cleanedExplanation.replace(
+    /^VERDICT:\s*\w+\s*\|\s*CERTAINTY:\s*\d+%\s*/i,
+    ""
+  );
+  cleanedExplanation = cleanedExplanation.replace(/^EXPLANATION:\s*/i, "");
+
+  // Build HTML with new format: "True/False XX% certainty"
   let html = `
     <div class="fact-checker-header">
       <div class="fact-checker-score" style="color: ${color};">
-        <span class="score-number">${Math.round(percent_true)}%</span>
-        <span class="score-label">${verdict}</span>
+        <span class="score-label">${verdictText} ${certaintyPercent}% certainty</span>
       </div>
     </div>
     
     <div class="fact-checker-explanation">
-      ${explanation}
+      ${cleanedExplanation}
     </div>
   `;
 
   // Add evidence if available
   if (evidences && evidences.length > 0) {
     html += `<div class="fact-checker-evidence">`;
-    html += `<div class="evidence-header">Evidence (${evidences.length}):</div>`;
+    html += `<div class="evidence-header">Top ${evidences.length} Most Reliable Sources:</div>`;
 
     evidences.slice(0, 3).forEach((ev, idx) => {
       const stanceIcon =
         ev.stance === "support" ? "✓" : ev.stance === "contradict" ? "✗" : "○";
       const stanceClass = `stance-${ev.stance}`;
 
+      // Make source clickable if URL is available
+      const sourceHTML = ev.url
+        ? `<a href="${ev.url}" target="_blank" rel="noopener noreferrer" class="evidence-source-link">${ev.source} 🔗</a>`
+        : `<span>${ev.source}</span>`;
+
       html += `
         <div class="evidence-item ${stanceClass}">
           <span class="evidence-icon">${stanceIcon}</span>
           <div class="evidence-content">
-            <div class="evidence-source">${ev.source}</div>
+            <div class="evidence-source">${sourceHTML}</div>
             <div class="evidence-snippet">${ev.snippet}</div>
           </div>
         </div>

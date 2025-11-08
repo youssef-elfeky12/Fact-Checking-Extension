@@ -146,6 +146,24 @@
   text-overflow: ellipsis;
 }
 
+.evidence-source-link {
+  color: #667eea;
+  text-decoration: none;
+  transition: color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.evidence-source-link:hover {
+  color: #764ba2;
+  text-decoration: underline;
+}
+
+.evidence-source-link:visited {
+  color: #805ad5;
+}
+
 .evidence-snippet {
   color: #64748b;
   line-height: 1.5;

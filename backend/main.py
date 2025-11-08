@@ -2,11 +2,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
-from web_search import get_web_search_engine
-from verifier import get_verifier
-from explainer import get_explainer, is_explainer_enabled
+from .llm_verifier import get_llm_verifier
 
-app = FastAPI(title="Fact Checker API", version="0.5.0")
+app = FastAPI(title="Fact Checker API", version="0.7.0")
 
 # CORS configuration for Firefox extension and localhost
 app.add_middleware(
@@ -17,48 +15,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize web search engine, verifier, and optional LLM explainer (load on startup)
-web_search = None
-verifier = None
-explainer = None
+# Initialize LLM verifier (load on startup)
+llm_verifier = None
 
 
 @app.on_event("startup")
 async def startup_event():
-    """Load web search engine, NLI model, and optional LLM explainer on startup."""
-    global web_search, verifier, explainer
+    """Load Tavily AI verifier on startup."""
+    global llm_verifier
     
-    # Initialize web search engine (no pre-loading needed)
+    # Initialize Tavily verifier
     try:
-        web_search = get_web_search_engine(max_results=5)
-        print("✓ Web search engine ready (DuckDuckGo)\n")
+        print("--- Loading Tavily AI Verifier ---")
+        llm_verifier = get_llm_verifier()
+        print("✓ Tavily verifier ready\n")
     except Exception as e:
-        print(f"❌ Error initializing web search: {e}")
-        web_search = None
-    
-    # Load NLI verifier
-    try:
-        print("--- Loading NLI Verifier ---")
-        verifier = get_verifier(model_name="roberta-large-mnli")
-        print("✓ NLI verifier ready\n")
-    except Exception as e:
-        print(f"❌ Error loading NLI verifier: {e}")
-        verifier = None
-    
-    # Load optional LLM explainer (only if enabled)
-    if is_explainer_enabled():
-        try:
-            print("--- Loading LLM Explainer (Mistral 7B) ---")
-            explainer = get_explainer(model_name="mistralai/Mistral-7B-Instruct-v0.2")
-            if explainer:
-                print("✓ LLM explainer ready\n")
-            else:
-                print("⚠ LLM explainer disabled\n")
-        except Exception as e:
-            print(f"❌ Error loading LLM explainer: {e}")
-            explainer = None
-    else:
-        print("⚠ LLM explainer disabled (set ENABLE_LLM_EXPLAINER=true to enable)\n")
+        print(f"❌ Error loading Tavily verifier: {e}")
+        print(f"   Make sure TAVILY_API_KEY is set in .env file")
+        print(f"   Get free key from: https://tavily.com\n")
+        llm_verifier = None
 
 
 class CheckRequest(BaseModel):
@@ -70,22 +45,23 @@ class Evidence(BaseModel):
     snippet: str
     stance: str  # "support" | "contradict" | "neutral"
     score: float
+    url: str  # URL to the source website
 
 
 class CheckResponse(BaseModel):
     percent_true: float
     evidences: list[Evidence]
     explanation: str
+    verdict: str  # "SUPPORTS" | "REFUTES" | "NOT ENOUGH INFO"
+    certainty: float  # 0.0 to 1.0 (the AI's actual certainty)
 
 
 @app.get("/")
 def root():
     return {
         "message": "Fact Checker API is running",
-        "version": "0.5.0",
-        "search_ready": web_search is not None,
-        "verifier_ready": verifier is not None,
-        "explainer_ready": explainer is not None
+        "version": "0.7.0",
+        "llm_verifier_ready": llm_verifier is not None
     }
 
 
@@ -94,27 +70,20 @@ def health_check():
     """Health check endpoint for extension popup status monitoring."""
     return {
         "status": "ok",
-        "search_ready": web_search is not None,
-        "verifier_ready": verifier is not None
+        "llm_verifier_ready": llm_verifier is not None
     }
 
 
 @app.post("/check", response_model=CheckResponse)
 def check_claim(req: CheckRequest):
     """
-    Check a claim and return percent_true estimate with evidence.
-    Uses real-time web search + NLI verification.
+    Check a claim using LLM-based fact verification with autonomous web search.
+    The LLM searches the web itself and provides sources it used.
     """
-    if web_search is None:
+    if llm_verifier is None:
         raise HTTPException(
             status_code=503,
-            detail="Web search engine not available."
-        )
-    
-    if verifier is None:
-        raise HTTPException(
-            status_code=503,
-            detail="NLI verifier not available. Please check server logs."
+            detail="Tavily AI verifier not available. Check TAVILY_API_KEY in .env file."
         )
     
     # Extract claim text
@@ -123,56 +92,48 @@ def check_claim(req: CheckRequest):
     if not claim:
         raise HTTPException(status_code=400, detail="tweet_text cannot be empty")
     
-    # Step 1: Search the web for relevant evidence
+    # Let the LLM search the web and verify the claim
     print(f"\n--- Checking claim: {claim[:100]}... ---")
-    evidence_docs = web_search.search(claim)
+    verification_result = llm_verifier.verify_claim(claim)
     
-    if not evidence_docs:
-        return CheckResponse(
-            percent_true=50.0,
-            evidences=[],
-            explanation="No web results found for this claim."
-        )
+    # Convert verdict to percent_true
+    verdict = verification_result['verdict']
+    confidence = verification_result['confidence']
     
-    # Step 2: Verify claim with NLI (evidence_docs already have distance key)
-    verification_result = verifier.verify_claim(
-        claim, 
-        evidence_docs,
-        relevance_threshold=0.3  # Lower threshold for better web results
-    )
+    if verdict == "SUPPORTS":
+        percent_true = 50 + (confidence * 50)  # 50-100%
+    elif verdict == "REFUTES":
+        percent_true = 50 - (confidence * 50)  # 0-50%
+    else:  # NOT ENOUGH INFO
+        percent_true = 50.0
     
-    # Step 4: Generate enhanced explanation with LLM (if enabled)
-    explanation = verification_result['explanation']
-    if explainer is not None:
-        try:
-            print("Generating LLM explanation...")
-            llm_explanation = explainer.generate_explanation(
-                claim=claim,
-                truth_score=verification_result['truth_score'],
-                evidences=verification_result['evidences']
-            )
-            explanation = llm_explanation
-            print(f"✓ LLM explanation generated")
-        except Exception as e:
-            print(f"⚠ LLM explanation failed, using fallback: {e}")
-            # Keep the template-based explanation from verifier
+    # Format evidence from LLM's cited sources
+    evidences = []
+    for source in verification_result['sources'][:3]:  # Top 3 sources
+        # Determine stance from verdict
+        if verdict == "SUPPORTS":
+            stance = "support"
+        elif verdict == "REFUTES":
+            stance = "contradict"
+        else:
+            stance = "neutral"
+        
+        evidences.append(Evidence(
+            source=source['title'],
+            snippet=f"Source: {source['title']}",
+            stance=stance,
+            score=confidence,
+            url=source['url']
+        ))
     
-    # Step 5: Format response
-    evidences = [
-        Evidence(
-            source=e['source'],
-            snippet=e['snippet'],
-            stance=e['stance'],
-            score=e['score']
-        )
-        for e in verification_result['evidences']
-    ]
-    
-    print(f"Truth score: {verification_result['truth_score']}%")
-    print(f"NLI scores: {verification_result['avg_nli_scores']}")
+    print(f"✓ Verdict: {verdict} ({percent_true:.0f}%)")
+    print(f"  Sources: {len(verification_result['sources'])}")
     
     return CheckResponse(
-        percent_true=verification_result['truth_score'],
+        percent_true=percent_true,
         evidences=evidences,
-        explanation=explanation
+        explanation=verification_result['reasoning'],
+        verdict=verdict,
+        certainty=confidence  # Pass the AI's actual certainty
     )
+
