@@ -9,6 +9,9 @@ venv/
 ENV/
 env/
 
+# Environment variables
+.env
+
 # IDE
 .vscode/
 .idea/
@@ -20,18 +23,8 @@ env/
 Thumbs.db
 
 # Project specific
-backend/__pycache__/
-tests/__pycache__/
 *.log
-*.db
-*.sqlite
-data/raw/
-data/cache/
-copilot_prompt.md
-
-# Model files (can be large)
-*.bin
-*.pt
-*.pth
-*.onnx
-*.h5
+data/
+tests/__pycache__/
+docs/
+scripts/

@@ -1,21 +1,28 @@
+"""
+Fact Checker API - Backend Service
+FastAPI-based backend that fact-checks claims using Tavily AI search.
+"""
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import os
 from .llm_verifier import get_llm_verifier
 
-app = FastAPI(title="Fact Checker API", version="0.7.0")
+app = FastAPI(
+    title="Fact Checker API",
+    version="1.0.0",
+    description="AI-powered fact-checking API using Tavily search"
+)
 
-# CORS configuration for Firefox extension and localhost
+# CORS configuration for browser extension
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict to specific origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Initialize LLM verifier (load on startup)
 llm_verifier = None
 
 
@@ -77,8 +84,16 @@ def health_check():
 @app.post("/check", response_model=CheckResponse)
 def check_claim(req: CheckRequest):
     """
-    Check a claim using LLM-based fact verification with autonomous web search.
-    The LLM searches the web itself and provides sources it used.
+    Fact-check a claim using Tavily AI.
+    
+    Args:
+        req: CheckRequest containing the claim text
+        
+    Returns:
+        CheckResponse with verdict, certainty, explanation, and sources
+        
+    Raises:
+        HTTPException: If verifier is unavailable or claim is empty
     """
     if llm_verifier is None:
         raise HTTPException(
@@ -90,26 +105,25 @@ def check_claim(req: CheckRequest):
     claim = req.tweet_text.strip()
     
     if not claim:
-        raise HTTPException(status_code=400, detail="tweet_text cannot be empty")
+        raise HTTPException(status_code=400, detail="Claim text cannot be empty")
     
-    # Let the LLM search the web and verify the claim
-    print(f"\n--- Checking claim: {claim[:100]}... ---")
+    # Verify the claim using Tavily AI
     verification_result = llm_verifier.verify_claim(claim)
     
-    # Convert verdict to percent_true
+    # Convert verdict to percentage scale for UI
     verdict = verification_result['verdict']
     confidence = verification_result['confidence']
     
     if verdict == "SUPPORTS":
-        percent_true = 50 + (confidence * 50)  # 50-100%
+        percent_true = 50 + (confidence * 50)
     elif verdict == "REFUTES":
-        percent_true = 50 - (confidence * 50)  # 0-50%
-    else:  # NOT ENOUGH INFO
+        percent_true = 50 - (confidence * 50)
+    else:
         percent_true = 50.0
     
-    # Format evidence from LLM's cited sources
+    # Format sources for display
     evidences = []
-    for source in verification_result['sources'][:3]:  # Top 3 sources
+    for source in verification_result['sources'][:3]:
         # Determine stance from verdict
         if verdict == "SUPPORTS":
             stance = "support"
@@ -126,14 +140,10 @@ def check_claim(req: CheckRequest):
             url=source['url']
         ))
     
-    print(f"✓ Verdict: {verdict} ({percent_true:.0f}%)")
-    print(f"  Sources: {len(verification_result['sources'])}")
-    
     return CheckResponse(
         percent_true=percent_true,
         evidences=evidences,
         explanation=verification_result['reasoning'],
         verdict=verdict,
-        certainty=confidence  # Pass the AI's actual certainty
+        certainty=confidence
     )
-

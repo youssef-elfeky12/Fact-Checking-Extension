@@ -1,80 +1,84 @@
-# Fact-Checking Browser Extension
+# AI Fact-Checker Extension for Twitter/X
 
-A Firefox browser extension that adds a "Check Fact" button to tweets, providing AI-powered fact-checking with confidence scores and supporting evidence.
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Python](https://img.shields.io/badge/python-3.12+-blue.svg)
+![Firefox](https://img.shields.io/badge/firefox-extension-orange)
 
-## Project Overview
+> A browser extension that adds AI-powered fact-checking to Twitter/X. Click "Verify Claim" on any tweet to get instant verification with sources.
 
-This project uses a retrieval-augmented verification approach (semantic search + NLI) to fact-check claims. It does NOT train models from scratch but leverages pre-trained open-source models for accurate, interpretable results.
+## ✨ Features
 
-### Architecture
+- 🔍 **One-Click Verification** - "Verify Claim" button on every tweet
+- 🤖 **AI-Powered Analysis** - Tavily AI searches and verifies claims
+- 🎯 **Certainty Scores** - Clear percentage-based confidence levels (e.g., "True - 95% Certainty")
+- 📚 **Source Transparency** - Top 3 most reliable sources with stance analysis
+- 🎨 **Twitter-Native UI** - Seamless integration matching Twitter's design
+- 🔒 **Privacy-First** - Tweet text extracted client-side only
 
-- **Backend**: FastAPI (Python) with FAISS vector DB for semantic search
-- **Embeddings**: sentence-transformers (all-mpnet-base-v2)
-- **Verifier**: NLI models (roberta-large-mnli or bart-large-mnli)
-- **Optional**: Quantized 7B LLM for explanation synthesis (uses 11GB GPU)
-- **Frontend**: Firefox extension (Manifest V3) that extracts tweet text from DOM
+## 🏗️ Architecture
 
-### Current Status
+```
+┌─────────────┐    ┌──────────────┐    ┌─────────────┐    ┌────────────────┐
+│ Tweet Text  │───▶│   Content    │───▶│   FastAPI   │───▶│  Tavily AI API │
+│  (browser)  │    │   Script     │    │   Backend   │    │  (web search)  │
+└─────────────┘    └──────────────┘    └─────────────┘    └────────────────┘
+                           │                    │                    │
+                           │                    └────────────────────┘
+                           │                      Verdict + Sources
+                           │                             │
+                           └─────────────────────────────┘
+                                    Display Results
+```
 
-✅ **Step 1 Complete**: Minimal API skeleton with placeholder responses  
-✅ **Step 2 Complete**: Add semantic search (embeddings + FAISS)  
-✅ **Step 3 Complete**: Add NLI verifier and scoring  
-✅ **Step 4 Complete**: Optional LLM synthesis (Mistral 7B - toggleable)  
-⏳ **Step 5**: Firefox extension  
-⏳ **Step 6**: Logging and feedback  
-⏳ **Step 7**: Documentation and packaging
+**Flow**:
 
-## Quick Start
+1. User clicks "Verify Claim" on a tweet
+2. Content script extracts tweet text and sends to backend API
+3. Backend calls Tavily AI with structured format requirements
+4. Tavily searches the web and returns verdict + sources
+5. Extension displays results under the tweet with color-coded verdict
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Python 3.9+ (tested on 3.9, 3.11, 3.12)
-- 11GB GPU (NVIDIA) for optional LLM synthesis (Step 4)
-- Firefox browser (for Step 5)
-- ~5GB disk space for models and dependencies
+- **Python 3.12+** (tested on 3.12)
+- **Firefox browser**
+- **Tavily AI API key** (free tier: 1000 searches/month)
+- ~50MB disk space
 
-### Setup
+### 1. Clone Repository
 
-1. **Clone and navigate to project root**:
-
-```cmd
-cd "c:\Users\youss\Important\Projects\Fact-Checking-Extension"
+```bash
+git clone https://github.com/youssef-elfeky12/Fact-Checking-Extension.git
+cd Fact-Checking-Extension
 ```
 
-2. **Create and activate virtual environment**:
-
-**CMD:**
+### 2. Backend Setup
 
 ```cmd
+# Create virtual environment
 python -m venv .venv
+
+# Activate virtual environment
 .venv\Scripts\activate
-```
 
-**PowerShell** (may require execution policy change):
-
-```powershell
-python -m venv .venv
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.venv\Scripts\Activate.ps1
-```
-
-3. **Install dependencies**:
-
-```cmd
+# Install dependencies
 python -m pip install -r backend\requirements.txt
+
+# Create .env file
+copy NUL .env
+
+# Add your Tavily API key to .env:
+# TAVILY_API_KEY=your_api_key_here
 ```
 
-4. **Build FAISS search index** (one-time, or when seed data changes):
+> 💡 **Get your free Tavily API key**: Visit [tavily.com](https://tavily.com) and sign up
 
-```cmd
-python backend\build_index.py
-```
+### 3. Start Backend Server
 
-This creates `data/index/faiss.index` from `data/seed_data.json`.
-
-5. **Start the backend server**:
-
-**Option A: Use the provided batch script** (recommended):
+**Option A: Use the batch script** (recommended):
 
 ```cmd
 run_server.bat
@@ -87,117 +91,139 @@ set PYTHONPATH=%CD%\backend
 .venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
 
-**Option C: With LLM explainer enabled** (requires GPU, downloads ~4GB model):
+The API will be available at `http://127.0.0.1:8000`
 
-```cmd
-run_server_with_llm.bat
-```
+### 4. Install Firefox Extension
 
-The server will download NLI models (~1.4GB) on first startup. This is cached in `%USERPROFILE%\.cache\huggingface\` and won't re-download on subsequent runs.
+1. Open Firefox
+2. Go to `about:debugging#/runtime/this-firefox`
+3. Click "Load Temporary Add-on"
+4. Select `manifest.json` from the `extension/` folder
+5. Navigate to Twitter/X
 
-6. **Test the API**:
+## 📋 Usage
 
-```cmd
-curl -X POST http://127.0.0.1:8000/check -H "Content-Type: application/json" -d "{\"tweet_text\":\"Water boils at 100 degrees Celsius.\"}"
-```
+1. **Navigate to Twitter/X**: Open [twitter.com](https://twitter.com) or [x.com](https://x.com)
+2. **Find a Tweet**: Scroll through your feed
+3. **Click "Verify Claim"**: Button appears next to like/retweet buttons
+4. **View Results**: See verdict, certainty, explanation, and sources
+5. **Hide Results**: Click "Hide Result" to collapse the fact-check box
 
-Or run the test suite:
-
-```cmd
-python -m pytest tests/ -v
-```
-
-API docs: http://127.0.0.1:8000/docs
-
-### Optional: Pre-download Models
-
-To avoid live downloads during demos, pre-download models after installing requirements:
-
-**NLI Model (roberta-large-mnli, ~1.4GB)**:
-
-```cmd
-.venv\Scripts\python.exe -c "from transformers import AutoTokenizer, AutoModelForSequenceClassification; AutoTokenizer.from_pretrained('roberta-large-mnli'); AutoModelForSequenceClassification.from_pretrained('roberta-large-mnli')"
-```
-
-**LLM Model (Mistral 7B, ~3.5GB)** - only if using `run_server_with_llm.bat`:
-
-```cmd
-set ENABLE_LLM_EXPLAINER=true
-.venv\Scripts\python.exe -c "from transformers import AutoTokenizer, AutoModelForCausalLM; AutoTokenizer.from_pretrained('mistralai/Mistral-7B-Instruct-v0.2'); print('Mistral 7B downloaded')"
-```
-
-Models are cached in `%USERPROFILE%\.cache\huggingface\` by default.
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 Fact-Checking-Extension/
-├── backend/          # FastAPI server
-│   ├── main.py
-│   ├── requirements.txt
-│   └── README.md
-├── extension/        # Firefox extension (Step 5)
-├── data/            # Seed corpus for FAISS (Step 2)
-├── tests/           # Test scripts
-│   └── test_api.py
-├── docs/
-│   └── CHANGELOG.md
-└── README.md
+├── backend/
+│   ├── main.py              # FastAPI application
+│   ├── llm_verifier.py      # Tavily AI integration
+│   └── requirements.txt     # Python dependencies
+├── extension/
+│   ├── manifest.json        # Extension configuration
+│   ├── background.js        # Background service worker
+│   ├── content_script.js    # Tweet injection logic
+│   ├── popup.html           # Extension popup
+│   ├── popup.js             # Popup logic
+│   ├── styles.css           # UI styling
+│   └── *.png                # Extension icons
+├── .env                     # Environment variables (create this)
+├── run_server.bat           # Windows server launcher
+└── README.md                # This file
 ```
 
-## Technology Stack
+## 🔧 API Reference
 
-- **Free/Open-Source Only**: No paid APIs or services
-- **Local-First**: Runs on developer machine (GPU accelerated when available)
-- **Privacy-Friendly**: Extracts tweet text client-side, minimal storage
-- **Models Used**:
-  - sentence-transformers/all-mpnet-base-v2 (~420MB) - embeddings
-  - roberta-large-mnli (~1.4GB) - NLI verification
-  - mistralai/Mistral-7B-Instruct-v0.2 (~3.5GB, optional) - explanations
-- **Demo Purpose**: Short-lived Firefox sideload for LinkedIn/GitHub portfolio
+### Endpoints
 
-## Environment Variables
+- **GET** `/` - API status and version
+- **GET** `/health` - Health check
+- **POST** `/check` - Fact-check a claim
 
-- `HF_HOME` - Hugging Face cache directory (default: `%USERPROFILE%\.cache\huggingface`)
-- `ENABLE_LLM_EXPLAINER` - Set to `true` to enable Mistral 7B explanations (default: `false`)
-- `PYTHONPATH` - Set to `<repo_root>\backend` for imports to work
+### Request Format
 
-## Troubleshooting
-
-### Model Re-downloads Every Time
-
-- Models are cached in `%USERPROFILE%\.cache\huggingface\`. If this directory is cleared or the venv is recreated, models won't re-download as long as the cache remains.
-- Set `HF_HOME` explicitly in your environment or run scripts to control cache location.
-
-### PowerShell Execution Policy Error
-
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.venv\Scripts\Activate.ps1
+```json
+{
+  "tweet_text": "The Eiffel Tower grows 15cm in summer"
+}
 ```
 
-### CUDA Out of Memory (Step 4 LLM)
+**Note**: Tweet text is automatically truncated to 400 characters (Tavily API limit)
 
-- Close other GPU applications
-- Don't enable LLM explainer (use template explanations instead)
-- The 4-bit quantized Mistral 7B needs ~4GB VRAM + ~2GB for NLI/embeddings
+### Response Format
 
-### Import Errors
+```json
+{
+  "verdict": "True",
+  "certainty": 0.95,
+  "explanation": "The Eiffel Tower expands up to 15 centimeters in summer...",
+  "evidences": [
+    {
+      "source": "Wikipedia - Eiffel Tower",
+      "url": "https://...",
+      "stance": "support",
+      "score": 0.95
+    }
+  ]
+}
+```
 
-- Ensure PYTHONPATH is set: `set PYTHONPATH=%CD%\backend`
-- Or use the provided `run_server.bat` script
+**Verdict values**: `"True"`, `"False"`, `"Uncertain"`
 
-## Next Steps
+## 🛠️ Development
 
-✅ Steps 1–4 complete. Type **`continue`** to proceed to **Step 5: Firefox Extension** development.
+### Running Tests
 
-For detailed step-by-step instructions, see:
+```bash
+# Activate virtual environment
+.venv\Scripts\activate
 
-- `copilot_prompt.md` - Full project prompt and workflow
-- `STEP3_COMPLETE.md` - NLI verifier setup
-- `STEP4_COMPLETE.md` - LLM explainer setup
-- `backend/README.md` - Backend-specific instructions
+# Run tests
+pytest tests/ -v
+```
 
-## License
+### Testing the API
 
-MIT (to be added in Step 7)
+```bash
+# Test health endpoint
+curl http://127.0.0.1:8000/health
+
+# Test fact-checking endpoint
+curl -X POST http://127.0.0.1:8000/check ^
+  -H "Content-Type: application/json" ^
+  -d "{\"tweet_text\":\"Water boils at 100 degrees Celsius.\"}"
+```
+
+API docs available at: `http://127.0.0.1:8000/docs`
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **Tavily AI** - For providing the fact-checking search API
+- **FastAPI** - For the excellent Python web framework
+- **Firefox** - For the extension platform
+
+## 📧 Contact
+
+Youssef Elfeky
+
+Project Link: [https://github.com/youssef-elfeky12/Fact-Checking-Extension](https://github.com/youssef-elfeky12/Fact-Checking-Extension)
+
+## ⚠️ Disclaimer
+
+This tool is for informational purposes only. Always verify important claims through multiple reliable sources. AI can make mistakes.
+
+---
+
+Made with ❤️ by Youssef Elfeky

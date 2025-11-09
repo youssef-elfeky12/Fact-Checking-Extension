@@ -1,6 +1,6 @@
 /**
  * Fact Checker - Content Script
- * Injects "Check Fact" buttons into tweets and displays verification results
+ * Injects "Verify Claim" buttons into tweets and displays fact-check results.
  */
 
 const API_URL = "http://127.0.0.1:8000/check";
@@ -44,12 +44,12 @@ function extractTweetText(tweetElement) {
 }
 
 /**
- * Create the "Check Fact" button
+ * Create the "Verify Claim" button
  */
 function createCheckButton() {
   const button = document.createElement("button");
   button.className = CHECK_BUTTON_CLASS;
-  button.textContent = "🔍 Check Fact";
+  button.textContent = "Verify Claim";
   button.title = "Verify this tweet with AI fact-checking";
 
   return button;
@@ -72,17 +72,26 @@ function createResultContainer() {
 function displayResult(container, result) {
   const { verdict, certainty, evidences, explanation } = result;
 
-  // Convert verdict to display text
+  // Convert verdict to display text and determine certainty level
   let verdictText, color;
   if (verdict === "SUPPORTS") {
     verdictText = "True";
-    color = "#10b981"; // green
+    color = "#00ba7c"; // Twitter green
   } else if (verdict === "REFUTES") {
     verdictText = "False";
-    color = "#ef4444"; // red
+    color = "#dc2626"; // Proper red color
   } else {
-    verdictText = "Uncertain";
-    color = "#f59e0b"; // orange
+    // For uncertain, base on certainty percentage
+    if (certainty >= 0.6) {
+      verdictText = "Likely True";
+      color = "#00ba7c";
+    } else if (certainty <= 0.4) {
+      verdictText = "Likely False";
+      color = "#dc2626"; // Proper red color
+    } else {
+      verdictText = "Uncertain";
+      color = "#ffd400"; // Twitter yellow
+    }
   }
 
   // Convert certainty to percentage (0.0-1.0 -> 0-100)
@@ -99,17 +108,15 @@ function displayResult(container, result) {
   );
   cleanedExplanation = cleanedExplanation.replace(/^EXPLANATION:\s*/i, "");
 
-  // Build HTML with new format: "True/False XX% certainty"
+  // Build HTML with Twitter-style design
   let html = `
     <div class="fact-checker-header">
       <div class="fact-checker-score" style="color: ${color};">
-        <span class="score-label">${verdictText} ${certaintyPercent}% certainty</span>
+        <span class="score-label">${verdictText} - ${certaintyPercent}% Certainty</span>
       </div>
     </div>
     
-    <div class="fact-checker-explanation">
-      ${cleanedExplanation}
-    </div>
+    <div class="fact-checker-explanation">${cleanedExplanation}</div>
   `;
 
   // Add evidence if available
@@ -119,7 +126,7 @@ function displayResult(container, result) {
 
     evidences.slice(0, 3).forEach((ev, idx) => {
       const stanceIcon =
-        ev.stance === "support" ? "✓" : ev.stance === "contradict" ? "✗" : "○";
+        ev.stance === "support" ? "✓" : ev.stance === "contradict" ? "X" : "○";
       const stanceClass = `stance-${ev.stance}`;
 
       // Make source clickable if URL is available
@@ -181,32 +188,23 @@ async function checkFact(tweetText) {
   }
 
   try {
-    console.log("Sending message to background script");
-    console.log("Tweet text:", tweetText.substring(0, 100));
-
-    // Send message to background script which will make the actual API call
+    // Send message to background script to make API call
     const response = await browser.runtime.sendMessage({
       type: "CHECK_FACT",
       tweetText: tweetText,
     });
-
-    console.log("Response from background:", response);
 
     if (!response.success) {
       throw new Error(response.error || "Unknown error");
     }
 
     const result = response.data;
-    console.log("Result received:", result);
 
     // Cache the result
     checkedTweets.set(tweetText, result);
 
     return result;
   } catch (error) {
-    console.error("Fact-checking API error:", error);
-    console.error("Error type:", error.constructor.name);
-    console.error("Error message:", error.message);
     throw error;
   }
 }
@@ -215,11 +213,19 @@ async function checkFact(tweetText) {
  * Handle button click
  */
 async function handleCheckButtonClick(button, tweetElement, resultContainer) {
+  // If result is already showing, hide it
+  if (resultContainer.style.display === "block") {
+    resultContainer.style.display = "none";
+    button.textContent = "Verify Claim";
+    button.disabled = false;
+    return;
+  }
+
   // Prevent double-clicking
   if (button.disabled) return;
 
   button.disabled = true;
-  button.textContent = "⏳ Checking...";
+  button.textContent = "Checking...";
 
   // Extract tweet text
   const tweetText = extractTweetText(tweetElement);
@@ -227,7 +233,7 @@ async function handleCheckButtonClick(button, tweetElement, resultContainer) {
   if (!tweetText) {
     displayError(resultContainer, "Could not extract tweet text");
     button.disabled = false;
-    button.textContent = "🔍 Check Fact";
+    button.textContent = "Verify Claim";
     return;
   }
 
@@ -241,12 +247,11 @@ async function handleCheckButtonClick(button, tweetElement, resultContainer) {
     // Display result
     displayResult(resultContainer, result);
 
-    // Update button
-    button.textContent = "✓ Checked";
+    // Update button to "Hide Result"
+    button.textContent = "Hide Result";
+    button.disabled = false;
   } catch (error) {
-    console.error("Full error details:", error);
-
-    // Show more specific error message
+    // Show error message
     let errorMessage = "Backend not available. ";
     if (error.message && error.message.includes("NetworkError")) {
       errorMessage +=
@@ -262,7 +267,7 @@ async function handleCheckButtonClick(button, tweetElement, resultContainer) {
 
     // Re-enable button
     button.disabled = false;
-    button.textContent = "🔍 Check Fact";
+    button.textContent = "Verify Claim";
   }
 }
 
@@ -278,10 +283,15 @@ function addFactCheckerToTweet(tweetElement) {
   // Mark as processed
   tweetElement.setAttribute(PROCESSED_ATTRIBUTE, "true");
 
+  // Find the tweet text container
+  const tweetTextContainer = tweetElement.querySelector(
+    '[data-testid="tweetText"]'
+  );
+
   // Find the action bar (where like, retweet buttons are)
   const actionBar = tweetElement.querySelector('[role="group"]');
 
-  if (!actionBar) {
+  if (!actionBar || !tweetTextContainer) {
     return; // Not a valid tweet element
   }
 
@@ -301,8 +311,11 @@ function addFactCheckerToTweet(tweetElement) {
   buttonWrapper.appendChild(button);
   actionBar.appendChild(buttonWrapper);
 
-  // Insert result container after the tweet
-  tweetElement.appendChild(resultContainer);
+  // Insert result container right after the tweet text (not at the bottom)
+  tweetTextContainer.parentElement.insertBefore(
+    resultContainer,
+    tweetTextContainer.nextSibling
+  );
 }
 
 /**
@@ -321,13 +334,11 @@ function processTweets() {
  * Initialize the extension
  */
 function init() {
-  console.log("Fact Checker extension loaded");
-
   // Process initial tweets
   processTweets();
 
   // Watch for new tweets (infinite scroll)
-  const observer = new MutationObserver((mutations) => {
+  const observer = new MutationObserver(() => {
     processTweets();
   });
 
@@ -335,8 +346,6 @@ function init() {
     childList: true,
     subtree: true,
   });
-
-  console.log("Fact Checker: Watching for tweets...");
 }
 
 // Wait for page to be ready

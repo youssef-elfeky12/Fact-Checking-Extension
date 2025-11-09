@@ -2,52 +2,56 @@
  * Fact Checker Extension - Styles
  */
 
-/* Check Fact Button */
+/* Check Fact Button - Match Twitter's action buttons style */
 .fact-checker-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: transparent;
+  color: rgb(113, 118, 123); /* Twitter's gray color */
   border: none;
-  border-radius: 20px;
-  padding: 6px 16px;
+  border-radius: 4px;
+  padding: 0 8px;
+  height: 34px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
 }
 
 .fact-checker-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  background-color: rgba(29, 155, 240, 0.1); /* Light blue hover like Twitter */
+  color: rgb(29, 155, 240); /* Twitter blue */
 }
 
 .fact-checker-button:active {
-  transform: translateY(0);
+  background-color: rgba(29, 155, 240, 0.2);
 }
 
 .fact-checker-button:disabled {
-  opacity: 0.7;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* Result Container */
+/* Result Container - Position under tweet text */
 .fact-checker-result {
-  margin-top: 12px;
-  padding: 16px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  padding: 12px;
+  background: rgba(247, 249, 249, 0.8); /* Subtle, faint background */
+  border: 1px solid rgb(207, 217, 222); /* Twitter's border color */
+  border-radius: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
 }
 
 /* Header with Score */
 .fact-checker-header {
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .fact-checker-score {
@@ -56,32 +60,28 @@
   gap: 8px;
 }
 
-.score-number {
-  font-size: 32px;
-  font-weight: 700;
-  line-height: 1;
-}
-
 .score-label {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700; /* Twitter uses bold */
+  opacity: 0.7; /* Faint as requested */
 }
 
-/* Explanation */
+/* Explanation - Twitter text style */
 .fact-checker-explanation {
-  color: #334155;
-  font-size: 14px;
-  line-height: 1.6;
-  margin-bottom: 12px;
-  padding: 12px;
-  background: white;
-  border-radius: 8px;
-  border-left: 3px solid #667eea;
+  color: rgb(15, 20, 25); /* Twitter's main text color */
+  font-size: 15px;
+  line-height: 20px; /* Twitter's line height */
+  font-weight: 400;
+  margin-bottom: 0;
 }
 
 /* Evidence Section */
 .fact-checker-evidence {
   margin-top: 12px;
+  padding: 12px;
+  background: transparent; /* Transparent to blend with background */
+  border: 1px solid rgb(207, 217, 222); /* Twitter's border color */
+  border-radius: 12px;
 }
 
 .evidence-header {
@@ -98,38 +98,35 @@
   gap: 10px;
   padding: 10px;
   margin-bottom: 8px;
-  background: white;
+  background: transparent; /* Transparent so gray container shows through */
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: none; /* Remove border around individual items */
   font-size: 13px;
 }
 
 .evidence-icon {
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
+  width: auto;
+  height: auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: bold;
+  font-size: 14px;
+  font-weight: normal;
+  color: rgb(113, 118, 123); /* Same gray as Verify Claim button */
 }
 
-/* Stance colors */
+/* Stance colors - removed, now all gray */
 .stance-support .evidence-icon {
-  background: #d1fae5;
-  color: #059669;
+  color: rgb(113, 118, 123);
 }
 
 .stance-contradict .evidence-icon {
-  background: #fee2e2;
-  color: #dc2626;
+  color: rgb(113, 118, 123);
 }
 
 .stance-neutral .evidence-icon {
-  background: #e5e7eb;
-  color: #6b7280;
+  color: rgb(113, 118, 123);
 }
 
 .evidence-content {
@@ -147,7 +144,7 @@
 }
 
 .evidence-source-link {
-  color: #667eea;
+  color: rgb(29, 155, 240); /* Twitter blue for links */
   text-decoration: none;
   transition: color 0.2s;
   display: inline-flex;
@@ -156,12 +153,12 @@
 }
 
 .evidence-source-link:hover {
-  color: #764ba2;
+  color: rgb(26, 140, 216); /* Darker Twitter blue on hover */
   text-decoration: underline;
 }
 
 .evidence-source-link:visited {
-  color: #805ad5;
+  color: rgb(29, 155, 240); /* Keep Twitter blue even when visited */
 }
 
 .evidence-snippet {
@@ -169,6 +166,7 @@
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -218,18 +216,21 @@
 /* Dark mode support (optional) */
 @media (prefers-color-scheme: dark) {
   .fact-checker-result {
-    background: #1e293b;
-    border-color: #334155;
+    background: rgba(22, 24, 28, 0.8);
+    border-color: rgb(47, 51, 54);
   }
 
   .fact-checker-explanation {
-    background: #0f172a;
-    color: #cbd5e1;
+    color: rgb(231, 233, 234); /* Twitter's dark mode text */
+  }
+
+  .fact-checker-evidence {
+    border-color: rgb(47, 51, 54); /* Dark gray border in dark mode */
   }
 
   .evidence-item {
-    background: #0f172a;
-    border-color: #334155;
+    background: transparent; /* Transparent in dark mode too */
+    border: none; /* No border in dark mode either */
   }
 
   .evidence-source {
