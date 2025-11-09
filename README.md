@@ -216,8 +216,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📧 Contact
 
-Youssef Elfeky
-
 Project Link: [https://github.com/youssef-elfeky12/Fact-Checking-Extension](https://github.com/youssef-elfeky12/Fact-Checking-Extension)
 
 ## ⚠️ Disclaimer
