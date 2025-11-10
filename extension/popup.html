@@ -5,48 +5,75 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fact Checker</title>
     <style>
-      body {
-        width: 320px;
-        padding: 16px;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          sans-serif;
-        margin: 0;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+      * {
+        box-sizing: border-box;
       }
 
-      h1 {
-        font-size: 20px;
-        margin: 0 0 12px 0;
+      body {
+        width: 360px;
+        padding: 0;
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background: #e5e7eb;
+        color: #1f2937;
+      }
+
+      .header {
+        background: #f3f4f6;
+        padding: 20px;
+        border-bottom: 1px solid #d1d5db;
+      }
+
+      .header-content {
         display: flex;
-        align-items: center;
-        gap: 8px;
+        align-items: flex-start;
+        gap: 12px;
       }
 
       .icon {
-        font-size: 24px;
-      }
-
-      p {
-        font-size: 14px;
-        line-height: 1.6;
-        margin: 0 0 16px 0;
-        opacity: 0.95;
-      }
-
-      .status {
-        background: rgba(255, 255, 255, 0.2);
-        padding: 12px;
+        width: 36px;
+        height: 36px;
         border-radius: 8px;
-        margin-bottom: 16px;
+        flex-shrink: 0;
+      }
+
+      .header-text {
+        flex: 1;
+      }
+
+      h1 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 6px 0;
+        color: #111827;
+      }
+
+      .subtitle {
+        font-size: 12px;
+        color: #6b7280;
+        margin: 0;
+        line-height: 1.4;
+      }
+
+      .content {
+        padding: 16px 20px;
+      }
+
+      .status-card {
+        background: #f9fafb;
+        border: 1px solid #d1d5db;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
       }
 
       .status-item {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 8px;
-        font-size: 13px;
+        margin-bottom: 12px;
+        font-size: 14px;
       }
 
       .status-item:last-child {
@@ -54,86 +81,211 @@
       }
 
       .status-label {
-        opacity: 0.9;
+        color: #6b7280;
+        font-weight: 500;
       }
 
       .status-value {
+        display: flex;
+        align-items: center;
+        gap: 6px;
         font-weight: 600;
+        color: #111827;
       }
 
       .indicator {
-        display: inline-block;
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        margin-left: 6px;
       }
 
       .indicator-active {
         background: #10b981;
-        box-shadow: 0 0 8px #10b981;
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
       }
 
       .indicator-inactive {
         background: #ef4444;
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
       }
 
-      .info {
-        background: rgba(255, 255, 255, 0.15);
-        padding: 12px;
-        border-radius: 8px;
+      .info-card {
+        background: #f9fafb;
+        border: 1px solid #d1d5db;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+      }
+
+      .info-title {
         font-size: 13px;
-        line-height: 1.5;
+        font-weight: 600;
+        color: #374151;
+        margin: 0 0 10px 0;
       }
 
-      .info strong {
-        display: block;
-        margin-bottom: 6px;
+      .info-list {
+        font-size: 13px;
+        line-height: 1.6;
+        color: #6b7280;
+        margin: 0;
       }
 
-      a {
-        color: white;
-        text-decoration: underline;
+      /* Toggle Switch Styles */
+      .toggle-container {
+        background: #f9fafb;
+        border: 1px solid #d1d5db;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .toggle-container:hover {
+        background: #f3f4f6;
+      }
+
+      .toggle-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+        pointer-events: none;
+      }
+
+      .toggle-switch {
+        position: relative;
+        width: 52px;
+        height: 28px;
+        background: #d1d5db;
+        border-radius: 14px;
+        cursor: pointer;
+        transition: background 0.3s;
+        pointer-events: none;
+      }
+
+      .toggle-switch.active {
+        background: #10b981;
+      }
+
+      .toggle-slider {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 24px;
+        height: 24px;
+        background: #ffffff;
+        border-radius: 50%;
+        transition: transform 0.3s;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .toggle-switch.active .toggle-slider {
+        transform: translateX(24px);
+      }
+
+      .toggle-button {
+        width: 100%;
+        padding: 12px;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .toggle-button:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+      }
+
+      .toggle-button:active {
+        background: #f3f4f6;
+      }
+
+      .toggle-button.disabled {
+        background: #fef2f2;
+        border-color: #fecaca;
+        color: #dc2626;
+      }
+
+      .toggle-button.disabled:hover {
+        background: #fee2e2;
+      }
+
+      .toggle-icon {
+        width: 16px;
+        height: 16px;
       }
 
       .footer {
-        margin-top: 16px;
+        padding: 16px 20px;
         text-align: center;
         font-size: 12px;
-        opacity: 0.8;
+        color: #9ca3af;
+        background: #f3f4f6;
+        border-top: 1px solid #d1d5db;
       }
     </style>
   </head>
   <body>
-    <h1>
-      <span class="icon">🔍</span>
-      Fact Checker
-    </h1>
-
-    <p>
-      AI-powered fact-checking for tweets using semantic search and NLI
-      verification.
-    </p>
-
-    <div class="status">
-      <div class="status-item">
-        <span class="status-label">Backend Status:</span>
-        <span class="status-value" id="backend-status"> Checking... </span>
-      </div>
-      <div class="status-item">
-        <span class="status-label">Page:</span>
-        <span class="status-value" id="page-status">Ready</span>
+    <div class="header">
+      <div class="header-content">
+        <img src="icons/icon48.png" alt="Fact Checker" class="icon" />
+        <div class="header-text">
+          <h1>Fact Checker</h1>
+          <p class="subtitle">AI-powered fact-checking for Twitter/X</p>
+        </div>
       </div>
     </div>
 
-    <div class="info">
-      <strong>How to use:</strong>
-      1. Navigate to Twitter/X<br />
-      2. Look for the "🔍 Check Fact" button on tweets<br />
-      3. Click to verify claims with AI
+    <div class="content">
+      <div class="status-card">
+        <div class="status-item">
+          <span class="status-label">Backend</span>
+          <span class="status-value" id="backend-status"> Checking... </span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Current Page</span>
+          <span class="status-value" id="page-status">Ready</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Extension</span>
+          <span class="status-value" id="extension-status">
+            <span class="indicator indicator-active"></span>
+            Enabled
+          </span>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <p class="info-title">How to use:</p>
+        <div class="info-list">
+          1. Navigate to Twitter/X<br />
+          2. Click "Verify Claim" on any tweet<br />
+          3. View AI-powered verification results
+        </div>
+      </div>
+
+      <div class="toggle-container" id="toggle-extension">
+        <span class="toggle-label">Extension Status</span>
+        <div class="toggle-switch active">
+          <div class="toggle-slider"></div>
+        </div>
+      </div>
     </div>
 
-    <div class="footer">v0.1.0 | Local-first AI</div>
+    <div class="footer">v1.0.0 | Tavily AI</div>
 
     <script src="popup.js"></script>
   </body>

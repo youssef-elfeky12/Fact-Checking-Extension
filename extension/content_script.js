@@ -11,6 +11,9 @@ const PROCESSED_ATTRIBUTE = "data-fact-checker-processed";
 // Cache for already checked tweets
 const checkedTweets = new Map();
 
+// Extension state - controls whether buttons are shown
+let extensionEnabled = true;
+
 /**
  * Extract tweet text from a tweet element
  */
@@ -322,6 +325,11 @@ function addFactCheckerToTweet(tweetElement) {
  * Find all tweets on the page and add fact-checker buttons
  */
 function processTweets() {
+  // Don't process tweets if extension is disabled
+  if (!extensionEnabled) {
+    return;
+  }
+
   // Twitter/X uses [data-testid="tweet"] for tweet containers
   const tweets = document.querySelectorAll('[data-testid="tweet"]');
 
@@ -331,11 +339,67 @@ function processTweets() {
 }
 
 /**
+ * Show all fact-checker buttons
+ */
+function showAllButtons() {
+  const buttons = document.querySelectorAll(`.${CHECK_BUTTON_CLASS}`);
+  buttons.forEach((button) => {
+    button.style.display = "inline-flex";
+  });
+}
+
+/**
+ * Hide all fact-checker buttons
+ */
+function hideAllButtons() {
+  const buttons = document.querySelectorAll(`.${CHECK_BUTTON_CLASS}`);
+  buttons.forEach((button) => {
+    button.style.display = "none";
+  });
+}
+
+/**
+ * Load extension state from storage
+ */
+/**
+ * Load extension state from storage
+ */
+async function loadExtensionState() {
+  try {
+    const result = await browser.storage.local.get("extensionEnabled");
+    console.log("Content script loaded from storage:", result);
+
+    // If extensionEnabled exists in storage, use it; otherwise default to true
+    extensionEnabled =
+      result.extensionEnabled !== undefined ? result.extensionEnabled : true;
+
+    console.log("Content script extension enabled:", extensionEnabled);
+
+    // Show/hide buttons based on state
+    if (extensionEnabled) {
+      processTweets();
+    } else {
+      hideAllButtons();
+    }
+  } catch (error) {
+    console.error("Error loading extension state:", error);
+    extensionEnabled = true; // Default to enabled on error
+  }
+}
+
+/**
  * Initialize the extension
  */
-function init() {
-  // Process initial tweets
-  processTweets();
+async function init() {
+  // Load initial state first (and wait for it)
+  await loadExtensionState();
+
+  console.log("Init completed, extension enabled:", extensionEnabled);
+
+  // Only process tweets if extension is enabled
+  if (extensionEnabled) {
+    processTweets();
+  }
 
   // Watch for new tweets (infinite scroll)
   const observer = new MutationObserver(() => {
@@ -345,6 +409,21 @@ function init() {
   observer.observe(document.body, {
     childList: true,
     subtree: true,
+  });
+
+  // Listen for extension state changes from popup
+  browser.runtime.onMessage.addListener((message) => {
+    if (message.type === "EXTENSION_STATE_CHANGED") {
+      extensionEnabled = message.enabled;
+      console.log("Extension state changed to:", extensionEnabled);
+
+      if (extensionEnabled) {
+        showAllButtons();
+        processTweets(); // Process any new tweets
+      } else {
+        hideAllButtons();
+      }
+    }
   });
 }
 
