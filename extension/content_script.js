@@ -92,7 +92,7 @@ function displayResult(container, result) {
       verdictText = "Likely False";
       color = "#dc2626"; // Proper red color
     } else {
-      verdictText = "Uncertain";
+      verdictText = "Inconclusive";
       color = "#ffd400"; // Twitter yellow
     }
   }

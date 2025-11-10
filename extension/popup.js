@@ -64,15 +64,25 @@ async function loadExtensionState() {
 
 // Update toggle switch appearance
 function updateToggleSwitch() {
-  const toggleSwitch = document.querySelector(
-    "#toggle-extension .toggle-switch"
-  );
+  const toggleSwitch = document.getElementById("toggle-switch-element");
+
+  if (!toggleSwitch) {
+    console.error("Toggle switch element not found!");
+    return;
+  }
+
+  console.log("Updating toggle switch, extensionEnabled:", extensionEnabled);
 
   if (extensionEnabled) {
     toggleSwitch.classList.add("active");
+    console.log("Toggle switch set to ACTIVE");
   } else {
     toggleSwitch.classList.remove("active");
+    console.log("Toggle switch set to INACTIVE");
   }
+
+  // Verify the class was applied
+  console.log("Toggle switch classes:", toggleSwitch.className);
 }
 
 // Update extension status display
@@ -134,10 +144,12 @@ async function toggleExtension() {
 }
 
 // Initialize when popup opens
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   console.log("Popup initialized");
 
-  loadExtensionState();
+  // Load state first before doing anything else
+  await loadExtensionState();
+
   checkBackendStatus();
   checkPageStatus();
 

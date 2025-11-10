@@ -3,7 +3,7 @@
   "name": "Fact Checker for Twitter",
   "version": "0.1.0",
   "description": "AI-powered fact-checking for tweets. Click 'Check Fact' to verify claims with confidence scores and evidence.",
-  "permissions": ["activeTab"],
+  "permissions": ["activeTab", "storage"],
   "host_permissions": ["http://127.0.0.1:8000/*"],
   "background": {
     "scripts": ["background.js"]
